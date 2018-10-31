@@ -1,0 +1,16 @@
+2018-10-28 19:05:35,073 [myid:] - INFO  [main:QuorumPeerConfig@130] - Reading configuration from: /media/meghana/5E6AE6FA1846AC9C/GaTech/Fall2018/DisCo/Project/zookeeper-3.5.4-beta/bin/../conf/zoo.cfg
+2018-10-28 19:05:35,079 [myid:] - INFO  [main:QuorumPeerConfig@376] - clientPortAddress is 0.0.0.0/0.0.0.0:2181
+2018-10-28 19:05:35,079 [myid:] - INFO  [main:QuorumPeerConfig@380] - secureClientPort is not set
+2018-10-28 19:05:35,082 [myid:] - WARN  [main:QuorumPeerConfig@641] - No server failure will be tolerated. You need at least 3 servers.
+2018-10-28 19:05:35,084 [myid:] - ERROR [main:QuorumPeerMain@89] - Invalid config, exiting abnormally
+org.apache.zookeeper.server.quorum.QuorumPeerConfig$ConfigException: Error processing /media/meghana/5E6AE6FA1846AC9C/GaTech/Fall2018/DisCo/Project/zookeeper-3.5.4-beta/bin/../conf/zoo.cfg
+	at org.apache.zookeeper.server.quorum.QuorumPeerConfig.parse(QuorumPeerConfig.java:151)
+	at org.apache.zookeeper.server.quorum.QuorumPeerMain.initializeAndRun(QuorumPeerMain.java:113)
+	at org.apache.zookeeper.server.quorum.QuorumPeerMain.main(QuorumPeerMain.java:82)
+Caused by: java.lang.IllegalArgumentException: myid file is missing
+	at org.apache.zookeeper.server.quorum.QuorumPeerConfig.checkValidity(QuorumPeerConfig.java:723)
+	at org.apache.zookeeper.server.quorum.QuorumPeerConfig.setupQuorumPeerConfig(QuorumPeerConfig.java:594)
+	at org.apache.zookeeper.server.quorum.QuorumPeerConfig.parseProperties(QuorumPeerConfig.java:411)
+	at org.apache.zookeeper.server.quorum.QuorumPeerConfig.parse(QuorumPeerConfig.java:147)
+	... 2 more
+Invalid config, exiting abnormally
