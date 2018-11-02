@@ -15,7 +15,7 @@ public class User {
 	
 	String id;
 	private static ResourceEncoder resourceEncoder = new ResourceEncoder();
-	String host = "";
+	String host = "128.61.48.64:2181";
 	
 	public User(String  id){
 		this.id =  id; // id?
@@ -25,10 +25,13 @@ public class User {
 		// Get request from the user
 		List<Request> requests = getUserRequests();
 		List<String> allocationLedger = new ArrayList();
-		Collections.fill(allocationLedger, "");
+		for (Request req: requests)
+			allocationLedger.add("");
+//		Collections.fill(allocationLedger, "");
 		//TODO: for each request, we need to execute the following steps - use threads?
 		for(int i=0; i < requests.size(); i++) {
 			Request req  = requests.get(i);
+			System.out.println("Requesting for Type: " + req.resourceType);
 			boolean isConnected = false;
 			int retryTimes = 0;
 			String childZNodePath = "", updatedChildZNodePath = "";
@@ -37,23 +40,28 @@ public class User {
 				// call resource request
 				childZNodePath = getResourceCandidates(req.resourceType, req.propValue);
 				// call resource connect till you get a connection.
-				updatedChildZNodePath = resourceConnect(childZNodePath);
-				if(!updatedChildZNodePath.equals(childZNodePath)) {
-					isConnected = true;
-					break;
+				if (!childZNodePath.equals("")) {
+					updatedChildZNodePath = resourceConnect(childZNodePath);
+					if(!updatedChildZNodePath.equals(childZNodePath)) {
+						isConnected = true;
+						break;
+					}
 				}
 				Thread.sleep(3000); //TODO: MAKE IT RANDOM
 			}
-			if (isConnected) {
-				allocationLedger.set(i, childZNodePath);
-			}
+			allocationLedger.set(i, updatedChildZNodePath);
+			if (isConnected)
+				System.out.println("Allocated " + updatedChildZNodePath);
+			else
+				System.out.println("Could not allocate " + updatedChildZNodePath);
 		}
 		
 		// call quit function
 		if (allocationLedger.stream().allMatch(val -> !val.equals(""))) {
+//			System.out.println(allocationLedger.get(0));
 			System.out.print("All resources have been allocated, you may proceed!");
-			Thread.sleep(10000);
-			System.out.print("Deallocating you resources. Bye.");
+			Thread.sleep(20000);
+			System.out.print("Deallocating your resources. Bye.");
 		}
 		else {
 			System.out.print("Could not allocate all the required resources, please retry.");
@@ -75,9 +83,9 @@ public class User {
 		while(!(request = reader.readLine()).equals("end")) {
 			String[] splits = request.split(" ");
 			Request req = new Request();
-			if(splits[0].equals("1")) req.resourceType = "Storage";
-			else if(splits[0].equals("2")) req.resourceType = "Network";
-			else if(splits[0].equals("3")) req.resourceType = "Compute";
+			if(splits[0].equals("1")) req.resourceType = "storage";
+			else if(splits[0].equals("2")) req.resourceType = "network";
+			else if(splits[0].equals("3")) req.resourceType = "compute";
 			else throw new IllegalArgumentException();
 			
 			req.propValue = Integer.parseInt(splits[1]);
@@ -128,7 +136,9 @@ public class User {
 		// Reconnect to the resource node
 		ZKConnection zkClient = new ZKConnection();
 		String[] zNodePathElements = zNodePath.split("/");
-		String pathPrefix = "/" + zNodePathElements[0] + "/", zNodeName = zNodePathElements[1];
+//		for(String split: zNodePathElements)
+//			System.out.println("Inside connect: " + split);
+		String pathPrefix = "/" + zNodePathElements[1] + "/", zNodeName = zNodePathElements[2];
 		zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
 		
 		//atomic give the resource and change znode
@@ -165,18 +175,21 @@ public class User {
 		// disconnect with the server
 		ZKConnection zkClient = new ZKConnection();
 		for(String zNodePath: allocatedLedger) {
-			String[] zNodePathElements = zNodePath.split("/");
-			String pathPrefix = "/" + zNodePathElements[0] + "/", zNodeName = zNodePathElements[1];
-			zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
-			
-			// Check and deallocate
-			if(!resourceEncoder.decodeIfAvailable(zNodeName) &&
-					zkClient.getZNodeData(zNodePath).equals(this.id)) {
-				String encodedZNodeName = resourceEncoder.encodeAsDeallotted(zNodeName);
-				zkClient.deleteNode(zNodePath);
-				zkClient.createNode(pathPrefix + encodedZNodeName, "".getBytes());
-			} 
-			zkClient.close();
+			if(!zNodePath.equals("")) {
+				String[] zNodePathElements = zNodePath.split("/");
+				String pathPrefix = "/" + zNodePathElements[1] + "/", zNodeName = zNodePathElements[2];
+				zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
+				System.out.println("Deallocating " + zNodePath);
+				// Check and deallocate
+				if(!resourceEncoder.decodeIfAvailable(zNodeName) &&
+						zkClient.getZNodeData(zNodePath).equals(this.id)) {
+					String encodedZNodeName = resourceEncoder.encodeAsDeallotted(zNodeName);
+					zkClient.deleteNode(zNodePath);
+					zkClient.createNode(pathPrefix + encodedZNodeName, "".getBytes());
+				}
+				zkClient.close();
+			}
 		}
+		System.out.println("Successfully deallocated resources, exiting.");
 	}
 }

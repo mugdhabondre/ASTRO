@@ -9,8 +9,11 @@ public class Test {
 	
 	public static void main (String args[]) throws Exception
     {
+		// Create dummy resources and add to ZK
+		
 		User user = new User("1");
 		user.start();
+		
 //        ZKConnection connector = new ZKConnection();
 //        ZooKeeper zk = connector.connect("127.0.0.1:2181,127.0.0.1:2183");
 //        String newNode = "/firstNode";
