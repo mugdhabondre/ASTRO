@@ -9,4 +9,13 @@ public class ResourceEncoder {
 	public String decode(String resourceCode) {
 		return ""; //ip:port
 	}
+	
+	public int decodePropertyValue(String resourceCode) {
+		return -1;
+	}
+	
+	public boolean decodeIfAvailable(String resourceCode) {
+		return false;
+	}
+	
 }

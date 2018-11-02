@@ -2,6 +2,7 @@ package astro;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.zookeeper.CreateMode;
@@ -54,5 +55,9 @@ public class ZKConnection {
 
     public void deleteNode(String path) throws Exception {
         zoo.delete(path,  zoo.exists(path, true).getVersion());
+    }
+    
+    public List<String> getChildren(String path) throws Exception {
+    	return zoo.getChildren(path, true);
     }
 }
