@@ -1,8 +1,17 @@
 package astro;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class User {
+	
+	class Request {
+		String resourceType;
+		int propValue;
+	}
+	
 	String id;
 	private static ResourceEncoder resourceEncoder = new ResourceEncoder();
 	String host = "";
@@ -11,26 +20,31 @@ public class User {
 		this.id =  id; // id?
 	}
 	
-	public void start() {
+	public void start() throws Exception {
 		// Get request from the user
-		Scanner reader = new Scanner(System.in);
+		BufferedReader reader =  
+                new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Enter the requested resources: 1. Storage 2. Network 3. Compute");
-		String request = reader.next();
-		System.out.println("You entered: " + request);
-		reader.close();
+		String request;
+		List<Request> requests = new ArrayList();
+		while(!(request = reader.readLine()).equals("end")) {
+			String[] splits = request.split(" ");
+			Request req = new Request();
+			if(splits[0].equals("1")) req.resourceType = "Storage";
+			else if(splits[0].equals("2")) req.resourceType = "Network";
+			else if(splits[0].equals("3")) req.resourceType = "Compute";
+			else throw new IllegalArgumentException();
+			
+			req.propValue = Integer.parseInt(splits[1]);
+			requests.add(req);
+		}	
 		
 		//for each request, we need to execute the following steps - use threads?
-		
-		/* not needed
-		// encode request
-		//String encodedRequest = resourceEncoder.encode(request);
-		*/
-		
-		// call resource request
-		//String address = resourceRequest(resourceType, propertyValue);
-		
-		// call resource connect till you get a connection.
-		
+		for(Request req: requests) {		
+			// call resource request
+			String address = resourceRequest(req.resourceType, req.propValue);
+			// call resource connect till you get a connection.
+		}
 		
 		// call quit function
 	}
@@ -53,10 +67,10 @@ public class User {
 			if(resourceEncoder.decodeIfAvailable(child)) {
 				int decodedValue = resourceEncoder.decodePropertyValue(child); 
 				if(decodedValue == propertyValue) {
-					address = resourceEncoder.decode(child);
+					address = resourceEncoder.decodeAddress(child);
 					break;
 				} else if(decodedValue > propertyValue && decodedValue < currValue) {
-					address = resourceEncoder.decode(child);
+					address = resourceEncoder.decodeAddress(child);
 					currValue = decodedValue;
 				}
 			}

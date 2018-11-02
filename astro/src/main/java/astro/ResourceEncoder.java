@@ -6,7 +6,7 @@ public class ResourceEncoder {
 		return ""; //encoded resource object
 	}
 	
-	public String decode(String resourceCode) {
+	public String decodeAddress(String resourceCode) {
 		return ""; //ip:port
 	}
 	
