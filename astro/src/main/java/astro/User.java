@@ -1,5 +1,6 @@
 package astro;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,31 @@ public class User {
 	
 	public void start() throws Exception {
 		// Get request from the user
+		List<Request> requests = getUserRequests();
+		
+		//TODO: for each request, we need to execute the following steps - use threads?
+		for(Request req: requests) {
+			boolean isConnected = false;
+			int retryTimes = 0;
+			while(!isConnected && retryTimes<5) {
+				retryTimes++;
+				// call resource request
+				String childZNodePath = getResourceCandidates(req.resourceType, req.propValue);
+				// call resource connect till you get a connection.
+				isConnected = resourceConnect(childZNodePath);
+				Thread.sleep(3000); //TODO: MAKE IT RANDOM
+			}
+		}
+		
+		// call quit function
+	}
+	
+	/***
+	 * Gets user requests
+	 * @return list of request objects
+	 * @throws Exception
+	 */
+	private List<Request> getUserRequests() throws Exception {
 		BufferedReader reader =  
                 new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Enter the requested resources: 1. Storage 2. Network 3. Compute");
@@ -36,29 +62,15 @@ public class User {
 			
 			req.propValue = Integer.parseInt(splits[1]);
 			requests.add(req);
-		}	
-		
-		//for each request, we need to execute the following steps - use threads?
-		for(Request req: requests) {
-			boolean isConnected = false;
-			int retryTimes = 0;
-			while(!isConnected && retryTimes<5) {
-				retryTimes++;
-				// call resource request
-				String childZNodePath = resourceRequest(req.resourceType, req.propValue);
-				// call resource connect till you get a connection.
-				isConnected = resourceConnect(childZNodePath);
-				Thread.sleep(3000);
-			}
 		}
 		
-		// call quit function
+		return requests;
 	}
 	
 	/*
-	 * Resource Request phase
+	 * Returns resource candidate(s) for the connect phase
 	 * */
-	public String resourceRequest(String resourceType, int propertyValue) throws Exception {
+	public String getResourceCandidates(String resourceType, int propertyValue) throws Exception {
 		// Start ZK client and get ZNode structure
 		ZKConnection zkClient = new ZKConnection();
 		
@@ -71,7 +83,8 @@ public class User {
 		String childZNode = "";
 		int currValue = Integer.MAX_VALUE;
 		for(String child:children) {
-			if(resourceEncoder.decodeIfAvailable(child)) {
+			if(resourceEncoder.decodeIfAvailable(child) && 
+					zkClient.getZNodeData(pathPrefix + "/" + child).equals("")) {
 				int decodedValue = resourceEncoder.decodePropertyValue(child); 
 				if(decodedValue == propertyValue) {
 					childZNode = child;
@@ -99,16 +112,23 @@ public class User {
 		zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
 		
 		//atomic give the resource and change znode
-		synchronized(this) {
-			if(resourceEncoder.decodeIfAvailable(zNodeName)) {
-				String encodedZNodeName = resourceEncoder.encodeAsAllotted(zNodeName);
-				zkClient.deleteNode(zNodePath);
-				zkClient.createNode(pathPrefix + encodedZNodeName, this.id.getBytes());
-				return true;
-			}
-		}
+		//needed? synchronized(this) {
 		
-		return false;
+		//check if available
+		if(resourceEncoder.decodeIfAvailable(zNodeName) &&
+				zkClient.getZNodeData(zNodePath).equals("")) {
+			//claim ownership
+			zkClient.updateNode(zNodePath, this.id.getBytes());
+		} else return false;
+		
+		//allocate to yourself if you are still the owner
+		if(resourceEncoder.decodeIfAvailable(zNodeName) &&
+				zkClient.getZNodeData(zNodePath).equals(this.id)) {
+			String encodedZNodeName = resourceEncoder.encodeAsAllotted(zNodeName);
+			zkClient.deleteNode(zNodePath);
+			zkClient.createNode(pathPrefix + encodedZNodeName, this.id.getBytes());
+			return true;
+		} else return false;
 	}
 	
 	
