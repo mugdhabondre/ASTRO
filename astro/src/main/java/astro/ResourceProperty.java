@@ -2,7 +2,7 @@ package astro;
 
 public class ResourceProperty {
 	String propType;
-	int numBits;
+	int capacity;
 	
 	public void setPropType(String propType) {
 		this.propType = propType;
@@ -12,11 +12,11 @@ public class ResourceProperty {
 		return this.propType;
 	}
 	
-	public void setNumBits(int numBits) {
-		this.numBits = numBits;
+	public void setCapacity(int capacity) {
+		this.capacity = capacity;
 	}
 	
-	public int getNumBits() {
-		return this.numBits;
+	public int getCapacity() {
+		return this.capacity;
 	}
 }
