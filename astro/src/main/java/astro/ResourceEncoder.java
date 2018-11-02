@@ -18,4 +18,8 @@ public class ResourceEncoder {
 		return false;
 	}
 	
+	public String encodeAsAllotted(String resourceCode) {
+		return resourceCode;
+	}
+	
 }
