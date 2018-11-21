@@ -8,11 +8,11 @@ public class Resource {
 	String ip, port;
 	List<ResourceProperty> properties;
 	
-	public Resource(String resourceType, String ip, String port) {
+	public Resource(String resourceType, String ip, String port, List<ResourceProperty> properties) {
 		this.resourceType = resourceType;
 		this.ip = ip;
 		this.port = port;
-		properties = new ArrayList();
+		this.properties = properties;
 	}
 	
 	public String getResourceType() {
