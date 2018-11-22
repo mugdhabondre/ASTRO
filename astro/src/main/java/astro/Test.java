@@ -1,8 +1,5 @@
 package astro;
 
-import java.util.Date;
-import java.util.List;
-
 import org.apache.zookeeper.ZooKeeper;
 
 public class Test {
@@ -11,11 +8,17 @@ public class Test {
     {
 		// Create dummy resources and add to ZK
 		
-		User user = new User("1");
-		user.start();
+		DeviceManager dm = new DeviceManager();
+		int id = dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
+		Thread.sleep(60000);
+		dm.leaveDevice(id);
+		
+//		User user = new User("1");
+//		user.start();
 		
 //        ZKConnection connector = new ZKConnection();
 //        ZooKeeper zk = connector.connect("127.0.0.1:2181,127.0.0.1:2183");
+//        System.out.println(connector.getConfig());
 //        String newNode = "/firstNode";
 //        connector.createNode(newNode, new Date().toString().getBytes());
 //        List<String> zNodes = zk.getChildren("/", true);
