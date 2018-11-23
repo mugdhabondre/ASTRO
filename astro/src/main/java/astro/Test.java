@@ -14,12 +14,18 @@ public class Test {
 		// Create dummy resources and add to ZK
 		
 		DeviceManager dm = new DeviceManager();
-		int id = dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
-		Thread.sleep(60000);
+		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
+//		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
+//		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
+//		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
+//		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
+		
+		Thread.sleep(5000);
+		
+		User user = new User("1");
+		user.start();
+		Thread.sleep(30000);
 		dm.leaveDevice("127.0.0.1","2195",true);
-//		
-//		User user = new User("1");
-//		user.start();
 		
 //        ZKConnection connector = new ZKConnection();
 //        ZooKeeper zk = connector.connect("127.0.0.1:2181,127.0.0.1:2183");
