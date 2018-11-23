@@ -23,7 +23,7 @@ public class ZKConnection {
     public ZooKeeper connect(String host) 
       throws IOException, 
       InterruptedException {
-        zoo = new ZooKeeperAdmin(host, 20000, new Watcher() {
+        zoo = new ZooKeeperAdmin(host, 40000, new Watcher() {
             public void process(WatchedEvent we) {
                 if (we.getState() == KeeperState.SyncConnected) {
                     connectionLatch.countDown();
@@ -56,17 +56,29 @@ public class ZKConnection {
         zoo.setData(path, data, zoo.exists(path, true).getVersion());
     }
 
-    public void deleteNode(String path) throws Exception {
-        zoo.delete(path,  zoo.exists(path, true).getVersion());
+    public boolean deleteNode(String path) {
+    	try {
+    		zoo.delete(path,  zoo.exists(path, true).getVersion());
+    	} catch (Exception e) {
+    		System.out.println("Could not delete node with exception: " + e.getMessage());
+    		return false;
+    	}
+    	return true;
     }
     
     public List<String> getChildren(String path) throws Exception {
     	return zoo.getChildren(path, true);
     }
     
-    public String getConfig() throws KeeperException, InterruptedException, UnsupportedEncodingException {
+    public String getConfig(Watcher watcher) throws KeeperException, InterruptedException, UnsupportedEncodingException {
     	byte[] b = null;
-        b = zoo.getConfig(null, new Stat());
+        b = zoo.getConfig(watcher, new Stat());
+        return new String(b, "UTF-8");
+    }
+    
+    public String getConfig(Watcher watcher, Stat stat) throws KeeperException, InterruptedException, UnsupportedEncodingException {
+    	byte[] b = null;
+        b = zoo.getConfig(watcher, stat);
         return new String(b, "UTF-8");
     }
     

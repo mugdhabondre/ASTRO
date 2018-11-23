@@ -1,5 +1,10 @@
 package astro;
 
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.Watcher.Event.EventType;
+import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
 public class Test {
@@ -11,13 +16,26 @@ public class Test {
 		DeviceManager dm = new DeviceManager();
 		int id = dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
 		Thread.sleep(60000);
-		dm.leaveDevice(id);
-		
+		dm.leaveDevice("127.0.0.1","2195",true);
+//		
 //		User user = new User("1");
 //		user.start();
 		
 //        ZKConnection connector = new ZKConnection();
 //        ZooKeeper zk = connector.connect("127.0.0.1:2181,127.0.0.1:2183");
+//        
+//        Watcher newTaskWatcher = new Watcher(){
+//            public void process(WatchedEvent e) {
+//                if(e.getType() == EventType.NodeDataChanged) {
+//                    System.out.println(EventType.NodeChildrenChanged);
+//                }
+//            }
+//        };
+//        
+//        zk.create("/meghana", "dummy".getBytes(), Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
+//        byte[] b = zk.getData("/meghana", newTaskWatcher, null);
+//        System.out.println(new String(b, "UTF-8"));
+//        connector.updateNode("/meghana", "newdummy".getBytes());
 //        System.out.println(connector.getConfig());
 //        String newNode = "/firstNode";
 //        connector.createNode(newNode, new Date().toString().getBytes());
