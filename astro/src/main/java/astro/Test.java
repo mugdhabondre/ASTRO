@@ -15,10 +15,10 @@ public class Test {
 		
 		DeviceManager dm = new DeviceManager();
 		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
-//		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
-//		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
-//		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
-//		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
+		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
+		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
+		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
+		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
 		
 		Thread.sleep(5000);
 		

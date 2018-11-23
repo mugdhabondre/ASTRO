@@ -7,15 +7,13 @@ import java.util.Collections;
 import java.util.List;
 
 public class User {
+
+	String id;
 	
 	class Request {
 		String resourceType;
 		int propValue;
 	}
-	
-	String id;
-	private static ResourceEncoder resourceEncoder = new ResourceEncoder();
-	String host = "127.0.0.1:2181";
 	
 	public User(String  id){
 		this.id =  id; // id?
@@ -103,9 +101,7 @@ public class User {
 	public String getResourceCandidates(String resourceType, int propertyValue) throws Exception {
 		// Start ZK client and get ZNode structure
 		ZKConnection zkClient = new ZKConnection();
-		
-		//for the purposes of this project, assume there is always one stable host.
-		zkClient.connect(host);
+		zkClient.connect(CONSTANTS.host);
 		String pathPrefix = "/" + resourceType;
 		List<String> children = zkClient.getChildren(pathPrefix);
 		
@@ -114,9 +110,9 @@ public class User {
 		int currValue = Integer.MAX_VALUE;
 		for(String child:children) {
 			System.out.println("Trying to see if this is a candidate: " + child);
-			if(resourceEncoder.decodeIfAvailable(child) && 
+			if(CONSTANTS.resourceEncoder.decodeIfAvailable(child) && 
 					zkClient.getZNodeData(pathPrefix + "/" + child).equals("")) {
-				int decodedValue = resourceEncoder.decodePropertyValue(child); 
+				int decodedValue = CONSTANTS.resourceEncoder.decodePropertyValue(child); 
 				if(decodedValue == propertyValue) {
 					childZNode = child;
 					System.out.println("Resource found: " + child);
@@ -143,10 +139,10 @@ public class User {
 		
 		String pathPrefix = "/" + zNodePathElements[1] + "/", zNodeName = zNodePathElements[2];
 		System.out.println("User trying to connect to: " + zNodeName);
-		zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
+		zkClient.connect(CONSTANTS.resourceEncoder.decodeAddress(zNodeName));
 		
 		//check if available
-		if(resourceEncoder.decodeIfAvailable(zNodeName) &&
+		if(CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 				zkClient.getZNodeData(zNodePath).equals("")) {
 			System.out.println("Trying to claim ownership");
 			//claim ownership
@@ -158,10 +154,10 @@ public class User {
 		}
 		
 		//allocate to yourself if you are still the owner
-		if(resourceEncoder.decodeIfAvailable(zNodeName) &&
+		if(CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 				zkClient.getZNodeData(zNodePath).equals(this.id)) {
 			System.out.println("I am still the owner");
-			String encodedZNodeName = resourceEncoder.encodeAsAllotted(zNodeName);
+			String encodedZNodeName = CONSTANTS.resourceEncoder.encodeAsAllotted(zNodeName);
 			zkClient.deleteNode(zNodePath);
 			System.out.println("Creating the new node: " + encodedZNodeName + "with data: " + this.id);
 			zkClient.createNode(pathPrefix + encodedZNodeName, this.id.getBytes());
@@ -183,12 +179,12 @@ public class User {
 			if(!zNodePath.equals("")) {
 				String[] zNodePathElements = zNodePath.split("/");
 				String pathPrefix = "/" + zNodePathElements[1] + "/", zNodeName = zNodePathElements[2];
-				zkClient.connect(resourceEncoder.decodeAddress(zNodeName));
+				zkClient.connect(CONSTANTS.resourceEncoder.decodeAddress(zNodeName));
 				System.out.println("Deallocating " + zNodePath);
 				// Check and deallocate
-				if(!resourceEncoder.decodeIfAvailable(zNodeName) &&
+				if(!CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 						zkClient.getZNodeData(zNodePath).equals(this.id)) {
-					String encodedZNodeName = resourceEncoder.encodeAsDeallotted(zNodeName);
+					String encodedZNodeName = CONSTANTS.resourceEncoder.encodeAsDeallotted(zNodeName);
 					zkClient.deleteNode(zNodePath);
 					zkClient.createNode(pathPrefix + encodedZNodeName, "".getBytes());
 				}

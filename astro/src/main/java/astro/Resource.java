@@ -1,6 +1,5 @@
 package astro;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class Resource {

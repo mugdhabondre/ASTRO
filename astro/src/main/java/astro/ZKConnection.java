@@ -23,7 +23,7 @@ public class ZKConnection {
     public ZooKeeper connect(String host) 
       throws IOException, 
       InterruptedException {
-        zoo = new ZooKeeperAdmin(host, 40000, new Watcher() {
+        zoo = new ZooKeeperAdmin(host, CONSTANTS.zkSessionTimeout, new Watcher() {
             public void process(WatchedEvent we) {
                 if (we.getState() == KeeperState.SyncConnected) {
                     connectionLatch.countDown();
