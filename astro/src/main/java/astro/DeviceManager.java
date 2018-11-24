@@ -107,23 +107,28 @@ public class DeviceManager {
 		zkClient.connect(CONSTANTS.host);
 		
 		//1. remove all resources
-		removeResources(zkClient, ip, clientPort, force);
-		System.out.println("Removed all resources for " + ip + ":" + clientPort);
-		
-		//2. remove from device znode
-		String devicePath = "/devices/" + ip + ":" + clientPort;
-		int id = Integer.valueOf((String)zkClient.getZNodeData(devicePath));
-		zkClient.deleteNode(devicePath);
-		System.out.println("Deleted node from /devices");
-		
-		//3. update configs to remove device from ensemble 
-		String newConfig = zkClient.removeServerFromEnsemble(String.valueOf(id));
-		System.out.println("Updated Config after removing the server: \n" +  newConfig);
+		boolean allRemoved = removeResources(zkClient, ip, clientPort, force);
+		if(allRemoved) {
+			System.out.println("Removed all resources for " + ip + ":" + clientPort);
+			
+			//2. remove from device znode
+			String devicePath = "/devices/" + ip + ":" + clientPort;
+			int id = Integer.valueOf((String)zkClient.getZNodeData(devicePath));
+			zkClient.deleteNode(devicePath);
+			System.out.println("Deleted node from /devices");
+			
+			//3. update configs to remove device from ensemble 
+			String newConfig = zkClient.removeServerFromEnsemble(String.valueOf(id));
+			System.out.println("Updated Config after removing the server: \n" +  newConfig);
+			//4. stop zk server
+			stopZKServer(id);
+		} else {
+			System.out.println("Cannot remove device as one or more resources are being used. Please try again later.");
+		}
 		
 		zkClient.close();
 		
-		//4. stop zk server
-		stopZKServer(id);
+	
 	}
 		
 	//--------------------------SUPPORTING FUNCTIONS ONLY---------------------------------
@@ -211,6 +216,7 @@ public class DeviceManager {
 				"syncLimit=5\n" + 
 				"initLimit=10\n" + 
 				"tickTime=2000\n" + 
+				"4lw.commands.whitelist=stat, ruok, conf, isro" + 
 				"dynamicConfigFile=/var/zookeeper/data_" + id + "/zoo_replicated" + id + ".cfg.dynamic";
 		return baseConfig;
 	}
@@ -261,7 +267,8 @@ public class DeviceManager {
         
 	}
 	
-	private void removeResources(ZKConnection zkClient, String ip, String port, boolean force) throws Exception {
+	private boolean removeResources(ZKConnection zkClient, String ip, String port, boolean force) throws Exception {
+		boolean allRemoved = true;
 		String address = ip + ":" + port;
 		System.out.println("-----Inside resource removal-----");
 		for(String resourcePath: CONSTANTS.resourcePaths) {
@@ -275,12 +282,13 @@ public class DeviceManager {
 						System.out.println("\t Resource removed successfully");
 					} else {
 						System.out.println("\t Someone is using the resource. Try again later.");
-						//return false ?
+						allRemoved = false;
 					}
 				}
 			}
 		}
 		System.out.println("-----Finished resource removal-----");
+		return allRemoved;
 	}
 	
 	private void stopZKServer(int id) throws IOException, InterruptedException {
