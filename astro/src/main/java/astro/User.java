@@ -59,12 +59,12 @@ public class User {
 		// call quit function
 		if (allocationLedger.stream().allMatch(val -> !val.equals(""))) {
 //			System.out.println(allocationLedger.get(0));
-			System.out.print("All resources have been allocated, you may proceed!");
+			System.out.print("All resources have been allocated, you may proceed!\n");
 			Thread.sleep(20000);
-			System.out.print("Deallocating your resources. Bye.");
+			System.out.print("Deallocating your resources. Bye.\n");
 		}
 		else {
-			System.out.print("Could not allocate all the required resources, please retry.");
+			System.out.print("Could not allocate all the required resources, please retry.\n");
 		}
 		//quit(allocationLedger);
 	}

@@ -10,6 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.Watcher.Event.EventType;
@@ -22,7 +23,7 @@ public class DeviceManager {
 		//----prep to start ZK----
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
-		String existingDynamicConfig = zkClient.getConfig(getConfigWatcher(zkClient, ip, clientPort));
+		String existingDynamicConfig = zkClient.getConfig();
 		System.out.println("Existing Config: \n" +  existingDynamicConfig);
 		
 		//get free id and create new ZK and dynamic configs
@@ -33,7 +34,7 @@ public class DeviceManager {
 		System.out.println("Updated Config by manually adding new server: \n" +  newDynamicConfig);
 		
 		//create data_id directory and add required files
-		String folder = "/var/zookeeper/data_" + id;
+		String folder = CONSTANTS.zkDir + "data_" + id;
 		new File(folder).mkdirs();
 		writeToFile(zkConfig, folder + "/zoo.cfg");
 		writeToFile(String.valueOf(id), folder + "/myid");
@@ -42,15 +43,12 @@ public class DeviceManager {
 		
 		//----actual device join----
 		// 1. start zk server
-		execZKServerCommand(folder + "/zoo.cfg", "start");
+		execZKServerCommand(CONSTANTS.zkserver + " start " + folder + "/zoo.cfg");
 		
 		//2. update configs in existing ensemble
 		newDynamicConfig = zkClient.addServerToEnsemble(serverAddress);
 		System.out.println("Updated Config after adding a new server: \n" +  newDynamicConfig);
 		
-		//3. add to /devices znode
-		zkClient.createNode("/devices/" + ip + ":" + clientPort, String.valueOf(id).getBytes());
-		System.out.println("Added device to /devices");
 		//----end actual device join----
 		
 		zkClient.close();
@@ -107,20 +105,16 @@ public class DeviceManager {
 		zkClient.connect(CONSTANTS.host);
 		
 		//1. remove all resources
-		boolean allRemoved = removeResources(zkClient, ip, clientPort, force);
+		String address =  ip + ":" + clientPort;
+		boolean allRemoved = removeResources(zkClient, address, force);
 		if(allRemoved) {
-			System.out.println("Removed all resources for " + ip + ":" + clientPort);
+			System.out.println("Removed all resources for " + ip + ":" + clientPort);		
 			
-			//2. remove from device znode
-			String devicePath = "/devices/" + ip + ":" + clientPort;
-			int id = Integer.valueOf((String)zkClient.getZNodeData(devicePath));
-			zkClient.deleteNode(devicePath);
-			System.out.println("Deleted node from /devices");
-			
-			//3. update configs to remove device from ensemble 
-			String newConfig = zkClient.removeServerFromEnsemble(String.valueOf(id));
+			//2. update configs to remove device from ensemble 
+			String id = findServerIdFromConfig(zkClient.getConfig(), address);
+			String newConfig = zkClient.removeServerFromEnsemble(id);
 			System.out.println("Updated Config after removing the server: \n" +  newConfig);
-			//4. stop zk server
+			//3. stop zk server
 			stopZKServer(id);
 		} else {
 			System.out.println("Cannot remove device as one or more resources are being used. Please try again later.");
@@ -131,52 +125,94 @@ public class DeviceManager {
 	
 	}
 		
-	//--------------------------SUPPORTING FUNCTIONS ONLY---------------------------------
-	private Watcher getConfigWatcher(ZKConnection zkClient, String ip, String port) {
-		return new Watcher(){
-	        public void process(WatchedEvent e) {	        	
-	            if(e.getType() == EventType.NodeDataChanged) {
-	            	System.out.println("-----Watcher triggered!-----");
-		        	String config = "";
-		        	Stat stat = new Stat();
-		        	try {
-						config = zkClient.getConfig(this, stat);
-			        	doMagic(zkClient, config, stat);
-					} catch (Exception e1) {
-						e1.printStackTrace();
-					}
-		        	System.out.println("-----Watcher complete!-----");
-	            }
-	        }
-
-			private void doMagic(ZKConnection zkClient, String config, Stat stat) throws Exception {
-				//get children from /devices znode - set A
-				List<String> devicesInZNode = zkClient.getChildren("/devices");
-				
-				//get the servers from config - set B
-				List<String> devicesInEnsemble = getServersFromConfig(config);
-				
-				//do set A-B - set C
-				devicesInZNode.removeAll(devicesInEnsemble);
-				
-				//if set C has devices, for each check if /devices still has it, remove it and its resources if yes
-				if(devicesInZNode.size()>0) {
-					System.out.println("Crashed devices found. Num: " + devicesInZNode.size());
-					for(String device : devicesInZNode) {
-						System.out.println("\t Trying to clean up device: " + device);
-						if(zkClient.deleteNode("/devices/" + device)) {
-							//remove all resources
-							removeResources(zkClient, ip, port, true);
-							System.out.println("\t Removed all resources for " + device);
-						}
-					}
-				} else {
-					System.out.println("No crashed devices found. It's all good, yo!");
-				}
-			}
-	    };
+	// garbage collector
+	public void collectGarbage(String ip, String port) throws Exception {
+		// create connection
+		ZKConnection zkClient = new ZKConnection();
+		zkClient.connect(CONSTANTS.host);
+		
+		//get config
+		String existingDynamicConfig = zkClient.getConfig();
+//		System.out.println("Existing Config: \n" +  existingDynamicConfig);
+		
+		//get list of ip addresses
+		List<String> devicesInEnsemble = getServersFromConfig(existingDynamicConfig);
+		
+		//ping each ip
+		List<String> crashedDevices = new ArrayList();
+		for(String device: devicesInEnsemble) {
+			String[] split = device.split(":");
+			String command = "echo ruok | nc " + split[0] + " " + split[1];
+			String result = execZKServerCommand(command);
+			if(result.equals(""))
+				crashedDevices.add(device);
+			else
+				assert(result.equals("imok"));
+		}
+		
+		//if not alive, add to list
+		for(String device: crashedDevices) {
+			// TODO getconfig each time?
+			// find server id from config
+			String serverId = findServerIdFromConfig(existingDynamicConfig, device);
+			System.out.println("Removing server "+ serverId + " from ensemble...");
+			zkClient.removeServerFromEnsemble(serverId);
+			String[] ipport = device.split(":");
+//			doMagic(zkClient, existingDynamicConfig, ipport[0], ipport[1]);
+			removeResources(zkClient, device, true);
+		}
+		
+		zkClient.close();
+		
 	}
-
+	
+	
+	//--------------------------SUPPORTING FUNCTIONS ONLY---------------------------------
+//	private Watcher getConfigWatcher(ZKConnection zkClient, String ip, String port) {
+//		return new Watcher(){
+//	        public void process(WatchedEvent e) {	        	
+//	            if(e.getType() == EventType.NodeDataChanged) {
+//	            	System.out.println("-----Watcher triggered!-----");
+//		        	String config = "";
+//		        	Stat stat = new Stat();
+//		        	try {
+//						config = zkClient.getConfig(this, stat);
+//			        	doMagic(zkClient, config, ip, port);
+//					} catch (Exception e1) {
+//						e1.printStackTrace();
+//					}
+//		        	System.out.println("-----Watcher complete!-----");
+//	            }
+//	        }
+//	    };
+//	}
+//
+//	private void doMagic(ZKConnection zkClient, String config, String ip, String port) throws Exception {
+//		//get children from /devices znode - set A
+//		List<String> devicesInZNode = zkClient.getChildren("/devices");
+//		
+//		//get the servers from config - set B
+//		List<String> devicesInEnsemble = getServersFromConfig(config);
+//		
+//		//do set A-B - set C
+//		devicesInZNode.removeAll(devicesInEnsemble);
+//		
+//		//if set C has devices, for each check if /devices still has it, remove it and its resources if yes
+//		if(devicesInZNode.size()>0) {
+//			System.out.println("Crashed devices found. Num: " + devicesInZNode.size());
+//			for(String device : devicesInZNode) {
+//				System.out.println("\t Trying to clean up device: " + device);
+//				if(zkClient.deleteNode("/devices/" + device)) {
+//					//remove all resources
+//					removeResources(zkClient, device, true);
+//					System.out.println("\t Removed all resources for " + device);
+//				}
+//			}
+//		} else {
+//			System.out.println("No crashed devices found. It's all good, yo!");
+//		}
+//	}
+	
 	private int getFreeIdFromConfig(String config) {
 		String[] lines = config.split(System.getProperty("line.separator"));
 		int[] ids = new int[256];
@@ -212,12 +248,12 @@ public class DeviceManager {
 	private String createZKConfig(int id) {
 		String baseConfig = "maxClientCnxns=60\n" + 
 				"reconfigEnabled=true\n" + 
-				"dataDir=/var/zookeeper/data_" + id + "\n" + 
+				"dataDir=" + CONSTANTS.zkDir + "data_" + id + "\n" + 
 				"syncLimit=5\n" + 
 				"initLimit=10\n" + 
 				"tickTime=2000\n" + 
-				"4lw.commands.whitelist=stat, ruok, conf, isro" + 
-				"dynamicConfigFile=/var/zookeeper/data_" + id + "/zoo_replicated" + id + ".cfg.dynamic";
+				"4lw.commands.whitelist=stat, ruok, conf, isro\n" + 
+				"dynamicConfigFile=" + CONSTANTS.zkDir + "data_" + id + "/zoo_replicated" + id + ".cfg.dynamic";
 		return baseConfig;
 	}
 	
@@ -243,10 +279,9 @@ public class DeviceManager {
 		return newResource;
 	}
 	
-	private void execZKServerCommand(String configPath, String command) throws IOException, InterruptedException {
+	private String execZKServerCommand(String command) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder();
-		pb.command("bash","-c","/media/meghana/5E6AE6FA1846AC9C/GaTech/Fall2018/DisCo/Project/ASTRO/zookeeper-3.5.4-beta/bin/zkServer.sh "
-					+ command + " " + configPath);
+		pb.command("bash","-c", command);
 		Process process = pb.start();
 		
 		System.out.println("Printing command execution output");
@@ -265,11 +300,12 @@ public class DeviceManager {
             System.out.println("Success!");
         }
         
+        return out.toString();
+        
 	}
 	
-	private boolean removeResources(ZKConnection zkClient, String ip, String port, boolean force) throws Exception {
+	private boolean removeResources(ZKConnection zkClient, String address, boolean force) throws Exception {
 		boolean allRemoved = true;
-		String address = ip + ":" + port;
 		System.out.println("-----Inside resource removal-----");
 		for(String resourcePath: CONSTANTS.resourcePaths) {
 			List<String> children = zkClient.getChildren(resourcePath);
@@ -291,9 +327,19 @@ public class DeviceManager {
 		return allRemoved;
 	}
 	
-	private void stopZKServer(int id) throws IOException, InterruptedException {
-		String folder = "/var/zookeeper/data_" + id;
-		execZKServerCommand(folder + "/zoo.cfg", "stop");
+	private void stopZKServer(String id) throws IOException, InterruptedException {
+		String folder = CONSTANTS.zkDir + "data_" + id;
+		execZKServerCommand( CONSTANTS.zkserver + " stop " + folder + "/zoo.cfg");
 	}
 
+	private String findServerIdFromConfig(String config, String device ) {
+		String[] lines = config.split(System.getProperty("line.separator"));
+		for(int i=0;i<lines.length-1;i++) {
+			String[] split = lines[i].split("=");
+			String[] ipPorts = split[1].split(":");
+			if(device.equals(ipPorts[0] + ":" +  ipPorts[ipPorts.length-1]))
+				return split[0].split("\\.")[1];
+		}
+		return null;
+	}
 }

@@ -72,17 +72,12 @@ public class ZKConnection {
     	return zoo.getChildren(path, true);
     }
     
-    public String getConfig(Watcher watcher) throws KeeperException, InterruptedException, UnsupportedEncodingException {
+    public String getConfig() throws KeeperException, InterruptedException, UnsupportedEncodingException {
     	byte[] b = null;
-        b = zoo.getConfig(watcher, new Stat());
+        b = zoo.getConfig(null, new Stat());
         return new String(b, "UTF-8");
     }
     
-    public String getConfig(Watcher watcher, Stat stat) throws KeeperException, InterruptedException, UnsupportedEncodingException {
-    	byte[] b = null;
-        b = zoo.getConfig(watcher, stat);
-        return new String(b, "UTF-8");
-    }
     
     //serverAddress needs to contain IP address all three ports
     public String addServerToEnsemble(String serverAddress) throws KeeperException, InterruptedException, UnsupportedEncodingException {

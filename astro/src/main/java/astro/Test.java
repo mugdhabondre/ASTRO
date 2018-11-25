@@ -13,23 +13,44 @@ public class Test {
     {
 		// Create dummy resources and add to ZK
 		
-//		DeviceManager dm = new DeviceManager();
-//		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
-//		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
-//		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
-//		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
-//		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
-//		
-//		Thread.sleep(5000);
-//		
-//		User user = new User("1");
-//		user.start();
-//		Thread.sleep(30000);
-//		dm.leaveDevice("127.0.0.1","2195",false);
+		DeviceManager dm = new DeviceManager();
 		
-        ZKConnection connector = new ZKConnection();
-        ZooKeeper zk = connector.connect("127.0.0.1:2195");//,127.0.0.1:2183");
-        zk.close();
+		// Create garbage collector thread to run in background
+	     Runnable r = new Runnable() {
+	         public void run() {
+	        	 // TODO make thread stoppable
+	             while(true) {
+	            	 try {
+	            		 dm.collectGarbage("127.0.0.1", "2181");
+//	            		 System.out.println("Garbage Collector running...");
+	            		 Thread.sleep(6000);
+	            	 }
+	            	 catch (Exception e) {
+	            		 e.printStackTrace();
+	            		 System.out.println("Garbage collector stopped. Retrying...");
+	            	 }
+	             }
+	         }
+	     };
+
+	     new Thread(r).start();
+		
+		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
+		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
+		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
+		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
+		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
+		
+		Thread.sleep(5000);
+		
+		User user = new User("1");
+		user.start();
+		Thread.sleep(60000);
+		dm.leaveDevice("127.0.0.1","2195",true);
+
+//        ZKConnection connector = new ZKConnection();
+//        ZooKeeper zk = connector.connect("127.0.0.1:2195");//,127.0.0.1:2183");
+//        zk.close();
 //        
 //        Watcher newTaskWatcher = new Watcher(){
 //            public void process(WatchedEvent e) {
