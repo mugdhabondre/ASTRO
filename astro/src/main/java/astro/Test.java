@@ -37,7 +37,7 @@ public class Test {
 		
 		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
 		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
-		dm.addResource("127.0.0.1", "2195", "storage", "ssd:100");
+		dm.addResource("127.0.0.1", "2195", "storage", true, "ssd:100");
 		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
 		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
 		
@@ -45,7 +45,7 @@ public class Test {
 		
 		User user = new User("1");
 		user.start();
-		Thread.sleep(60000);
+		Thread.sleep(30000);
 		dm.leaveDevice("127.0.0.1","2195",true);
 
 //        ZKConnection connector = new ZKConnection();

@@ -68,6 +68,19 @@ public class ZKConnection {
     	return true;
     }
     
+    public boolean deleteAll(String node) {
+        try {
+			for (String child : zoo.getChildren(node, false)) {
+			    deleteNode(node + "/" + child);
+			}
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			System.out.println("Could not recursively delete node with exception: " + e.getMessage());
+			return false;
+		} 
+        return deleteNode(node);
+    }
+    
     public List<String> getChildren(String path) throws Exception {
     	return zoo.getChildren(path, true);
     }

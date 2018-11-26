@@ -12,6 +12,7 @@ public class User {
 	
 	class Request {
 		String resourceType;
+		boolean readOnly;
 		int propValue;
 	}
 	
@@ -25,7 +26,7 @@ public class User {
 		List<String> allocationLedger = new ArrayList();
 		for (Request req: requests)
 			allocationLedger.add("");
-//		Collections.fill(allocationLedger, "");
+
 		//TODO: for each request, we need to execute the following steps - use threads?
 		for(int i=0; i < requests.size(); i++) {
 			Request req  = requests.get(i);
@@ -38,9 +39,14 @@ public class User {
 				retryTimes++;
 				
 				// call resource request
-				childZNodePath = getResourceCandidates(req.resourceType, req.propValue);
+				childZNodePath = getResourceCandidates(req);
 				// call resource connect till you get a connection.
 				if (!childZNodePath.equals("")) {
+					if(req.readOnly) {
+						resourceShare(childZNodePath);
+						isConnected = true;
+						break;
+					}
 					updatedChildZNodePath = resourceConnect(childZNodePath);
 					if(!updatedChildZNodePath.equals(childZNodePath)) {
 						isConnected = true;
@@ -89,6 +95,11 @@ public class User {
 			else throw new IllegalArgumentException();
 			
 			req.propValue = Integer.parseInt(splits[1]);
+			if (splits.length == 3)
+				req.readOnly = (splits[2].equals("1"));
+			else
+				req.readOnly = false;
+			
 			requests.add(req);
 		}
 		
@@ -98,11 +109,11 @@ public class User {
 	/*
 	 * Returns resource candidate(s) for the connect phase
 	 */
-	public String getResourceCandidates(String resourceType, int propertyValue) throws Exception {
+	public String getResourceCandidates(Request request) throws Exception {
 		// Start ZK client and get ZNode structure
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
-		String pathPrefix = "/" + resourceType;
+		String pathPrefix = "/" + request.resourceType;
 		List<String> children = zkClient.getChildren(pathPrefix);
 		
 		// Get ceiling of user requirements
@@ -111,15 +122,18 @@ public class User {
 		for(String child:children) {
 			System.out.println("Trying to see if this is a candidate: " + child);
 			if(CONSTANTS.resourceEncoder.decodeIfAvailable(child) && 
-					zkClient.getZNodeData(pathPrefix + "/" + child).equals("")) {
-				int decodedValue = CONSTANTS.resourceEncoder.decodePropertyValue(child); 
-				if(decodedValue == propertyValue) {
-					childZNode = child;
-					System.out.println("Resource found: " + child);
-					break;
-				} else if(decodedValue > propertyValue && decodedValue < currValue) {
-					childZNode = child;
-					currValue = decodedValue;
+					(request.readOnly || zkClient.getZNodeData(pathPrefix + "/" + child).equals(""))) {
+				int decodedValue = CONSTANTS.resourceEncoder.decodePropertyValue(child);
+				boolean readOnly = CONSTANTS.resourceEncoder.decodeReadOnly(child);
+				if(readOnly  == request.readOnly) {
+					if(decodedValue == request.propValue) {
+						childZNode = child;
+						System.out.println("Resource found: " + child);
+						break;
+					} else if(decodedValue > request.propValue && decodedValue < currValue) {
+						childZNode = child;
+						currValue = decodedValue;
+					}
 				}
 			}
 		}
@@ -158,7 +172,7 @@ public class User {
 				zkClient.getZNodeData(zNodePath).equals(this.id)) {
 			System.out.println("I am still the owner");
 			String encodedZNodeName = CONSTANTS.resourceEncoder.encodeAsAllotted(zNodeName);
-			zkClient.deleteNode(zNodePath);
+			zkClient.deleteAll(zNodePath);
 			System.out.println("Creating the new node: " + encodedZNodeName + "with data: " + this.id);
 			zkClient.createNode(pathPrefix + encodedZNodeName, this.id.getBytes());
 			zkClient.close();
@@ -170,6 +184,20 @@ public class User {
 		
 	}
 	
+	public void resourceShare(String zNodePath) throws Exception{
+		// Reconnect to the resource node
+		ZKConnection zkClient = new ZKConnection();
+		String[] zNodePathElements = zNodePath.split("/");
+		
+		String pathPrefix = "/" + zNodePathElements[1] + "/", zNodeName = zNodePathElements[2];
+		System.out.println("User trying to connect to: " + zNodeName);
+		zkClient.connect(CONSTANTS.resourceEncoder.decodeAddress(zNodeName));
+		
+		// add a child znode with user id
+		zkClient.createNode(zNodePath + "/" + this.id, "".getBytes());
+		
+		zkClient.close();
+	}
 	
 	public void quit(List<String> allocatedLedger) throws Exception {
 		// Atomic deallocate and change znode
@@ -185,7 +213,7 @@ public class User {
 				if(!CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 						zkClient.getZNodeData(zNodePath).equals(this.id)) {
 					String encodedZNodeName = CONSTANTS.resourceEncoder.encodeAsDeallotted(zNodeName);
-					zkClient.deleteNode(zNodePath);
+					zkClient.deleteAll(zNodePath);
 					zkClient.createNode(pathPrefix + encodedZNodeName, "".getBytes());
 				}
 				zkClient.close();

@@ -58,7 +58,12 @@ public class DeviceManager {
 	
 	//add resource
 	public void addResource(String ip, String port, String resourceType, String props) throws Exception {
-		Resource newResource = createResourceObject(ip,port,resourceType,props);
+		addResource(ip, port, resourceType, false, props);
+	}
+	
+	//add resource
+	public void addResource(String ip, String port, String resourceType, boolean readOnly, String props) throws Exception {
+		Resource newResource = createResourceObject(ip,port,resourceType,readOnly,props);
 		String encodedResource = CONSTANTS.resourceEncoder.encode(newResource);
 	
 		ZKConnection zkClient = new ZKConnection();
@@ -71,11 +76,16 @@ public class DeviceManager {
 		
 		zkClient.close();
 	}
-
+	
 	//remove resource
 	public void removeResource(String ip, String port, String resourceType, String props, boolean force) throws Exception {
+		removeResource(ip, port, resourceType, false, props, force);
+	}
+	
+	//remove resource
+	public void removeResource(String ip, String port, String resourceType, boolean readOnly, String props, boolean force) throws Exception {
 		System.out.println("-----Inside single resource removal-----");
-		Resource resource = createResourceObject(ip, port, resourceType, props);
+		Resource resource = createResourceObject(ip, port, resourceType, readOnly, props);
 		String encodedResource = CONSTANTS.resourceEncoder.encode(resource);
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
@@ -87,7 +97,7 @@ public class DeviceManager {
 				System.out.println("Trying to remove resource: " + child);
 				String path = pathPrefix + "/" + child;
 				if(zkClient.getZNodeData(path).equals("") || force) {
-					zkClient.deleteNode(path);
+					zkClient.deleteAll(path);
 					System.out.println("\t Resource removed successfully");
 				} else {
 					System.out.println("\t Someone is using the resource. Try again later.");
@@ -264,8 +274,8 @@ public class DeviceManager {
 			     
 			    writer.close();
 			}
-
-	private Resource createResourceObject(String ip, String port, String resourceType, String props) {
+	
+	private Resource createResourceObject(String ip, String port, String resourceType, boolean readOnly, String props) {
 		String[] propSplit = props.split(" ");
 		List<ResourceProperty> properties = new ArrayList();
 		for(String propString: propSplit) {
@@ -274,8 +284,8 @@ public class DeviceManager {
 			property.setCapacity(Integer.parseInt(propString.split(":")[1]));
 			properties.add(property);
 		}
-		
-		Resource newResource = new Resource(resourceType, ip, port, properties);
+		//default readOnly = False
+		Resource newResource = new Resource(resourceType, ip, port, readOnly, properties);
 		return newResource;
 	}
 	
@@ -304,6 +314,7 @@ public class DeviceManager {
         
 	}
 	
+	
 	private boolean removeResources(ZKConnection zkClient, String address, boolean force) throws Exception {
 		boolean allRemoved = true;
 		System.out.println("-----Inside resource removal-----");
@@ -313,8 +324,9 @@ public class DeviceManager {
 				if(CONSTANTS.resourceEncoder.decodeAddress(child).equals(address)) {
 					System.out.println("Trying to remove resource: " + child);
 					String path = resourcePath + "/" + child;
+					// data will always be "" for readOnly resources
 					if(zkClient.getZNodeData(path).equals("") || force) {
-						zkClient.deleteNode(path);
+						zkClient.deleteAll(path);
 						System.out.println("\t Resource removed successfully");
 					} else {
 						System.out.println("\t Someone is using the resource. Try again later.");
