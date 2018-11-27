@@ -25,7 +25,6 @@ public class ZKConnection {
       InterruptedException {
         zoo = new ZooKeeperAdmin(host, CONSTANTS.zkSessionTimeout, new Watcher() {
             public void process(WatchedEvent we) {
-            	System.out.println(we.getState());
                 if (we.getState() == KeeperState.SyncConnected) {
                     connectionLatch.countDown();
                 }
@@ -33,7 +32,6 @@ public class ZKConnection {
         });
  
         connectionLatch.await();
-        System.out.println(zoo.getState());
         return zoo;
     }
  

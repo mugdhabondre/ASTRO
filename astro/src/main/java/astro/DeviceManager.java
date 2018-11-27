@@ -43,7 +43,11 @@ public class DeviceManager {
 		
 		//----actual device join----
 		// 1. start zk server
-		execZKServerCommand(CONSTANTS.zkserver + " start " + folder + "/zoo.cfg");
+		String result = execZKServerCommand(CONSTANTS.zkserver + " start " + folder + "/zoo.cfg");
+		if(result.contains("FAILED TO START")) {
+			System.out.println("Could not start a new server!");
+			System.exit(0);
+		}
 		
 		//2. update configs in existing ensemble
 		newDynamicConfig = zkClient.addServerToEnsemble(serverAddress);
@@ -263,7 +267,7 @@ public class DeviceManager {
 				"initLimit=10\n" + 
 				"tickTime=2000\n" + 
 				"4lw.commands.whitelist=stat, ruok, conf, isro\n" + 
-				"dynamicConfigFile=" + CONSTANTS.zkDir + "data_" + id + "/zoo_replicated" + id + ".cfg.dynamic";
+				"dynamicConfigFile=" + CONSTANTS.zkDir + "data_" + id + "/zoo_replicated" + id + ".cfg.dynamic\n";
 		return baseConfig;
 	}
 	
@@ -294,7 +298,7 @@ public class DeviceManager {
 		pb.command("bash","-c", command);
 		Process process = pb.start();
 		
-		System.out.println("Printing command execution output");
+//		System.out.println("Printing command execution output");
 		StringBuilder out = new StringBuilder();
         BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
         String line = null, previous = null;
@@ -302,13 +306,13 @@ public class DeviceManager {
             if (!line.equals(previous)) {
                 previous = line;
                 out.append(line).append('\n');
-                System.out.println(line);
+//                System.out.println(line);
             }
 
-        //Check result
-        if (process.waitFor() == 0) {
-            System.out.println("Success!");
-        }
+//        //Check result
+//        if (process.waitFor() == 0) {
+//            System.out.println("Success!");
+//        }
         
         return out.toString();
         

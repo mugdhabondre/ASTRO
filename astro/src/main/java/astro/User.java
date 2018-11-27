@@ -43,6 +43,7 @@ public class User {
 				// call resource connect till you get a connection.
 				if (!childZNodePath.equals("")) {
 					if(req.readOnly) {
+						updatedChildZNodePath = childZNodePath;
 						resourceShare(childZNodePath);
 						isConnected = true;
 						break;
@@ -64,7 +65,6 @@ public class User {
 		
 		// call quit function
 		if (allocationLedger.stream().allMatch(val -> !val.equals(""))) {
-//			System.out.println(allocationLedger.get(0));
 			System.out.print("All resources have been allocated, you may proceed!\n");
 			Thread.sleep(20000);
 			System.out.print("Deallocating your resources. Bye.\n");
@@ -102,7 +102,6 @@ public class User {
 			
 			requests.add(req);
 		}
-		
 		return requests;
 	}
 	
