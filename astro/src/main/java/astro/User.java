@@ -10,26 +10,18 @@ public class User {
 
 	String id;
 	
-	class Request {
-		String resourceType;
-		boolean readOnly;
-		int propValue;
-	}
-	
 	public User(String  id){
 		this.id =  id; // id?
 	}
 	
-	public void start() throws Exception {
-		// Get request from the user
-		List<Request> requests = getUserRequests();
+	public void start(List<UserRequest> requests) throws Exception {
 		List<String> allocationLedger = new ArrayList();
-		for (Request req: requests)
+		for (UserRequest req: requests)
 			allocationLedger.add("");
 
 		//TODO: for each request, we need to execute the following steps - use threads?
 		for(int i=0; i < requests.size(); i++) {
-			Request req  = requests.get(i);
+			UserRequest req  = requests.get(i);
 			System.out.println("Requesting for Type: " + req.resourceType);
 			boolean isConnected = false;
 			int retryTimes = 0;
@@ -62,17 +54,22 @@ public class User {
 			else
 				System.out.println("Could not allocate " + updatedChildZNodePath);
 		}
-		
 		// call quit function
 		if (allocationLedger.stream().allMatch(val -> !val.equals(""))) {
 			System.out.print("All resources have been allocated, you may proceed!\n");
-			Thread.sleep(20000);
+			Thread.sleep(30000);
 			System.out.print("Deallocating your resources. Bye.\n");
 		}
 		else {
 			System.out.print("Could not allocate all the required resources, please retry.\n");
 		}
-		//quit(allocationLedger);
+//		quit(allocationLedger);
+	}
+	
+	public void start() throws Exception {
+		// Get request from the user
+		List<UserRequest> requests = getUserRequests();
+		start(requests);
 	}
 	
 	/***
@@ -80,15 +77,15 @@ public class User {
 	 * @return list of request objects
 	 * @throws Exception
 	 */
-	private List<Request> getUserRequests() throws Exception {
+	private List<UserRequest> getUserRequests() throws Exception {
 		BufferedReader reader =  
                 new BufferedReader(new InputStreamReader(System.in));
 		System.out.println("Enter the requested resources: 1. Storage 2. Network 3. Compute");
 		String request;
-		List<Request> requests = new ArrayList();
+		List<UserRequest> requests = new ArrayList();
 		while(!(request = reader.readLine()).equals("end")) {
 			String[] splits = request.split(" ");
-			Request req = new Request();
+			UserRequest req = new UserRequest();
 			if(splits[0].equals("1")) req.resourceType = "storage";
 			else if(splits[0].equals("2")) req.resourceType = "network";
 			else if(splits[0].equals("3")) req.resourceType = "compute";
@@ -108,7 +105,7 @@ public class User {
 	/*
 	 * Returns resource candidate(s) for the connect phase
 	 */
-	public String getResourceCandidates(Request request) throws Exception {
+	public String getResourceCandidates(UserRequest request) throws Exception {
 		// Start ZK client and get ZNode structure
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
