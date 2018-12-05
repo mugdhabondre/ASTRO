@@ -11,10 +11,10 @@ public class DeviceTest {
 	List<DeviceRequest> deviceRequests = new ArrayList();
 	
 	private void createDeviceRequestObjects() {
-		File folder = new File("../deviceRequests");
+		File folder = new File("/Users/mugdha_bondre/Documents/Fall_2018/DC/project/ASTRO/astro/deviceRequests");
 		File[] listOfFiles = folder.listFiles();
 		for(File file: listOfFiles) {
-			if(file.isFile()) {
+			if(file.isFile() && !file.isHidden()) {
 				DeviceRequest deviceRequest = new DeviceRequest(file.getPath());
 				deviceRequests.add(deviceRequest);
 			}

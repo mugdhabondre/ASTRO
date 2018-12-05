@@ -9,7 +9,7 @@ import java.util.List;
 
 public class DeviceRequest {
 	String ip, port1, port2,port3;
-	List<List<String>> resources;
+	List<List<String>> resources = new ArrayList();
 	
 	public DeviceRequest(String fileName) {
 		try {
@@ -31,6 +31,7 @@ public class DeviceRequest {
 					for(String each: splits) {
 						resource.add(each);
 					}
+					resources.add(resource);
 				}
 			}
 			fileReader.close();
