@@ -1,4 +1,4 @@
-package astro;
+package test;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.WatchedEvent;
@@ -9,52 +9,53 @@ import org.apache.zookeeper.ZooKeeper;
 
 public class Test {
 	
+	@SuppressWarnings("deprecation")
 	public static void main (String args[]) throws Exception
     {
-		// Create dummy resources and add to ZK
 		
-		DeviceManager dm = new DeviceManager();
-		
-		// Create garbage collector thread to run in background
-	     Runnable r = new Runnable() {
-	    	 boolean exit = false;
-	         public void run() {
-	             while(!exit) {
-	            	 try {
-	            		 dm.collectGarbage("127.0.0.1", "2181");
-	            		 System.out.println("Garbage Collector running...");
-	            		 Thread.sleep(6000);
-	            	 }
-	            	 catch (Exception e) {
-	            		 e.printStackTrace();
-	            		 System.out.println("Garbage collector stopped. Retrying...");
-	            	 }
-	             }
-	         }
-	         
-	         public void stop() {
-	        	 exit = true;
-	         }
-	     };
-
-	     Thread garbageCollector = new Thread(r);
-	     garbageCollector.start(); 
-		
-		dm.joinDevice("127.0.0.1", "2197", "2192", "2195");
-		dm.addResource("127.0.0.1", "2195", "storage", "hdd:10");
-		dm.addResource("127.0.0.1", "2195", "storage", true, "ssd:100");
-		dm.addResource("127.0.0.1", "2195", "compute", "cpu:20");
-		dm.addResource("127.0.0.1", "2195", "network", "bwdt:30");
-		
-		
-		UserTest test = new UserTest();
+		DeviceTest test = new DeviceTest();
 		test.start();
 		Thread.sleep(60000);
 		
 		// exit
 		test.stop();
-		dm.leaveDevice("127.0.0.1","2195",true);
-		garbageCollector.stop();
+		
+		// Create garbage collector thread to run in background
+//	     Runnable r = new Runnable() {
+//	    	 boolean exit = false;
+//	         public void run() {
+//	             while(!exit) {
+//	            	 try {
+//	            		 dm.collectGarbage("127.0.0.1", "2181");
+//	            		 System.out.println("Garbage Collector running...");
+//	            		 Thread.sleep(6000);
+//	            	 }
+//	            	 catch (Exception e) {
+//	            		 e.printStackTrace();
+//	            		 System.out.println("Garbage collector stopped. Retrying...");
+//	            	 }
+//	             }
+//	         }
+//	         
+//	         public void stop() {
+//	        	 exit = true;
+//	         }
+//	     };
+
+//	     Thread garbageCollector = new Thread(r);
+//	     garbageCollector.start(); 
+		
+		
+		
+		
+//		UserTest test = new UserTest();
+//		test.start();
+//		Thread.sleep(60000);
+//		
+//		// exit
+//		test.stop();
+//		dm.leaveDevice("127.0.0.1","2195",true);
+//		garbageCollector.stop();
 
 //        ZKConnection connector = new ZKConnection();
 //        ZooKeeper zk = connector.connect("127.0.0.1:2195");//,127.0.0.1:2183");

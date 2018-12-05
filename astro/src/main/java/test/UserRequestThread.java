@@ -1,6 +1,9 @@
-package astro;
+package test;
 
 import java.util.List;
+
+import astro.User;
+import astro.UserRequest;
 
 public class UserRequestThread implements Runnable {
 	private final int i;

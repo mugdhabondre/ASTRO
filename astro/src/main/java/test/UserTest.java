@@ -1,9 +1,11 @@
-package astro;
+package test;
 
 import java.util.*;
 
+import astro.UserRequest;
+
 public class UserTest {
-	int numThreads = 3;
+	int numThreads = 1;
 	Thread[] threads = new Thread[numThreads];
 	List<List<UserRequest>> allRequests = new ArrayList<>();
 	

@@ -9,6 +9,7 @@ import java.util.List;
 public class User {
 
 	String id;
+	TimeWatch overWatch = new TimeWatch();
 	
 	public User(String  id){
 		this.id =  id; // id?
@@ -151,30 +152,40 @@ public class User {
 		System.out.println("User trying to connect to: " + zNodeName);
 		zkClient.connect(CONSTANTS.resourceEncoder.decodeAddress(zNodeName));
 		
+		// Latency check wrapper
+		overWatch.reset();
 		//check if available
 		if(CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 				zkClient.getZNodeData(zNodePath).equals("")) {
-			System.out.println("Trying to claim ownership");
+			//System.out.println("Trying to claim ownership");
 			//claim ownership
 			zkClient.updateNode(zNodePath, this.id.getBytes());
-			System.out.println("Claimed ownership");
+			//System.out.println("Claimed ownership");
 		} else { 
 			zkClient.close();
 			return zNodePath;
 		}
+		// endOf check if available
+		overWatch.elapsedTime("Phase1");
+		// endOf Latency check wrapper
 		
-		//allocate to yourself if you are still the owner
+		
+		// Latency check
+		overWatch.reset();
+		// allocate to yourself if you are still the owner
 		if(CONSTANTS.resourceEncoder.decodeIfAvailable(zNodeName) &&
 				zkClient.getZNodeData(zNodePath).equals(this.id)) {
-			System.out.println("I am still the owner");
+			//System.out.println("I am still the owner");
 			String encodedZNodeName = CONSTANTS.resourceEncoder.encodeAsAllotted(zNodeName);
 			zkClient.deleteAll(zNodePath);
-			System.out.println("Creating the new node: " + encodedZNodeName + "with data: " + this.id);
+//			System.out.println("Creating the new node: " + encodedZNodeName + "with data: " + this.id);
 			zkClient.createNode(pathPrefix + encodedZNodeName, this.id.getBytes());
 			zkClient.close();
+			overWatch.elapsedTime("Phase2");
 			return pathPrefix + encodedZNodeName;
 		} else {
 			zkClient.close();
+			overWatch.elapsedTime("Phase2");
 			return zNodePath;
 		}
 		

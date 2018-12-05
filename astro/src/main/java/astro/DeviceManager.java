@@ -67,7 +67,7 @@ public class DeviceManager {
 	
 	//add resource
 	public void addResource(String ip, String port, String resourceType, boolean readOnly, String props) throws Exception {
-		Resource newResource = createResourceObject(ip,port,resourceType,readOnly,props);
+		Resource newResource = CONSTANTS.utils.createResourceObject(ip,port,resourceType,readOnly,props);
 		String encodedResource = CONSTANTS.resourceEncoder.encode(newResource);
 	
 		ZKConnection zkClient = new ZKConnection();
@@ -89,7 +89,7 @@ public class DeviceManager {
 	//remove resource
 	public void removeResource(String ip, String port, String resourceType, boolean readOnly, String props, boolean force) throws Exception {
 		System.out.println("-----Inside single resource removal-----");
-		Resource resource = createResourceObject(ip, port, resourceType, readOnly, props);
+		Resource resource = CONSTANTS.utils.createResourceObject(ip, port, resourceType, readOnly, props);
 		String encodedResource = CONSTANTS.resourceEncoder.encode(resource);
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
@@ -172,7 +172,6 @@ public class DeviceManager {
 			System.out.println("Removing server "+ serverId + " from ensemble...");
 			zkClient.removeServerFromEnsemble(serverId);
 			String[] ipport = device.split(":");
-//			doMagic(zkClient, existingDynamicConfig, ipport[0], ipport[1]);
 			removeResources(zkClient, device, true);
 		}
 		
@@ -279,20 +278,6 @@ public class DeviceManager {
 			    writer.close();
 			}
 	
-	private Resource createResourceObject(String ip, String port, String resourceType, boolean readOnly, String props) {
-		String[] propSplit = props.split(" ");
-		List<ResourceProperty> properties = new ArrayList();
-		for(String propString: propSplit) {
-			ResourceProperty property = new ResourceProperty();
-			property.setPropType(propString.split(":")[0]);
-			property.setCapacity(Integer.parseInt(propString.split(":")[1]));
-			properties.add(property);
-		}
-		//default readOnly = False
-		Resource newResource = new Resource(resourceType, ip, port, readOnly, properties);
-		return newResource;
-	}
-	
 	private String execZKServerCommand(String command) throws IOException, InterruptedException {
 		ProcessBuilder pb = new ProcessBuilder();
 		pb.command("bash","-c", command);
@@ -346,6 +331,7 @@ public class DeviceManager {
 	private void stopZKServer(String id) throws IOException, InterruptedException {
 		String folder = CONSTANTS.zkDir + "data_" + id;
 		execZKServerCommand( CONSTANTS.zkserver + " stop " + folder + "/zoo.cfg");
+		System.out.println("Stopped ZK server");
 	}
 
 	private String findServerIdFromConfig(String config, String device ) {
