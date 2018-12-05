@@ -1,0 +1,5 @@
+127.0.0.1,2197,2192,2195
+storage,false,hdd:10
+storage,true,ssd:100
+compute,false,cpu:20
+network,false,bwdt:30

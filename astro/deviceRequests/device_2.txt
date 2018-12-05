@@ -1,0 +1,3 @@
+127.0.0.1,2297,2292,2295
+storage,false,hdd:15
+compute,false,cpu:50

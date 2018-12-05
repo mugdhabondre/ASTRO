@@ -1,0 +1,4 @@
+127.0.0.1,2397,2392,2395
+storage,true,ssd:50
+compute,false,cpu:32
+network,bwdt:55
