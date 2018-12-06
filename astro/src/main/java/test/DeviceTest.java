@@ -6,7 +6,7 @@ import java.util.List;
 
 public class DeviceTest {
 
-	int numThreads = 1;
+	int numThreads = 2;
 	Thread[] threads = new Thread[numThreads];
 	List<DeviceRequest> deviceRequests = new ArrayList();
 	
@@ -24,7 +24,7 @@ public class DeviceTest {
 	public void start() {
 		createDeviceRequestObjects();
 		for(int i=0; i < numThreads; i++) {
-		    DeviceRequestThread deReqThread = new DeviceRequestThread(deviceRequests.get(i));
+		    DeviceRequestThread deReqThread = new DeviceRequestThread(deviceRequests.get(i), "/var/lib/zookeeper/DeviceLatencyMicro_"+i+".txt");
 		     threads[i] = new Thread(deReqThread);
 		}
 		

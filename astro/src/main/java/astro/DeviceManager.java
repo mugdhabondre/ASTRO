@@ -1,6 +1,7 @@
 package astro;
 
 import java.io.BufferedReader;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -18,20 +19,33 @@ import org.apache.zookeeper.data.Stat;
 
 public class DeviceManager {
 	
+	private TimeWatch overWatch;
+	
+	public DeviceManager(String fileName) {
+		this.overWatch = new TimeWatch(fileName);
+	}
+	
+	public DeviceManager() {
+		this.overWatch = new TimeWatch(CONSTANTS.fileName);
+	}
+	
 	//device join
 	public int joinDevice(String ip, String peerPort, String leaderPort, String clientPort) throws Exception {
 		//----prep to start ZK----
+		overWatch.reset();
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
 		String existingDynamicConfig = zkClient.getConfig();
 		//System.out.println("Existing Config: \n" +  existingDynamicConfig);
 		
+
 		//get free id and create new ZK and dynamic configs
 		int id = getFreeIdFromConfig(existingDynamicConfig);
 		String zkConfig = createZKConfig(id);
 		String serverAddress = "server." + id + "=" + ip + ":" + peerPort + ":" + leaderPort + ";" + clientPort;
 		String newDynamicConfig = getNewDynamicConfig(existingDynamicConfig, serverAddress);
 		//System.out.println("Updated Config by manually adding new server: \n" +  newDynamicConfig);
+
 		
 		//create data_id directory and add required files
 		String folder = CONSTANTS.zkDir + "data_" + id;
@@ -40,18 +54,23 @@ public class DeviceManager {
 		writeToFile(String.valueOf(id), folder + "/myid");
 		writeToFile(newDynamicConfig, folder + "/zoo_replicated" + id + ".cfg.dynamic");
 		//----end of prep to start ZK----
+		overWatch.elapsedTime("JoinDevice|PrepStartZK");
 		
 		//----actual device join----
+		overWatch.reset();
 		// 1. start zk server
 		String result = execZKServerCommand(CONSTANTS.zkserver + " start " + folder + "/zoo.cfg");
 		if(result.contains("FAILED TO START")) {
 			System.out.println("Could not start a new server!");
 			System.exit(0);
 		}
+		overWatch.elapsedTime("JoinDevice|StartZK");
 		
+		overWatch.reset();
 		//2. update configs in existing ensemble
 		newDynamicConfig = zkClient.addServerToEnsemble(serverAddress);
 		//System.out.println("Updated Config after adding a new server: \n" +  newDynamicConfig);
+		overWatch.elapsedTime("JoinDevice|ChangeConfig");
 		
 		//----end actual device join----
 		
@@ -67,16 +86,21 @@ public class DeviceManager {
 	
 	//add resource
 	public void addResource(String ip, String port, String resourceType, boolean readOnly, String props) throws Exception {
+		
+		overWatch.reset();
 		Resource newResource = CONSTANTS.utils.createResourceObject(ip,port,resourceType,readOnly,props);
 		String encodedResource = CONSTANTS.resourceEncoder.encode(newResource);
+		overWatch.elapsedTime("AddResource|ResourceEncoding");
 	
 		ZKConnection zkClient = new ZKConnection();
 		
 		zkClient.connect(CONSTANTS.host);
 		String pathPrefix = "/" + resourceType;
 		
+		overWatch.reset();
 		zkClient.createNode(pathPrefix + "/" + encodedResource, "".getBytes());
 		//System.out.println("Added resource successfully");
+		overWatch.elapsedTime("AddResource|CreateNode");
 		
 		zkClient.close();
 	}
@@ -118,21 +142,30 @@ public class DeviceManager {
 		ZKConnection zkClient = new ZKConnection();
 		zkClient.connect(CONSTANTS.host);
 		
+		overWatch.reset();
 		//1. remove all resources
 		String address =  ip + ":" + clientPort;
 		boolean allRemoved = removeResources(zkClient, address, force);
+		overWatch.elapsedTime("LeaveDevice|removeResources");
+		
 		if(allRemoved) {
 			//System.out.println("Removed all resources for " + ip + ":" + clientPort);		
 			
+			overWatch.reset();
 			//2. update configs to remove device from ensemble 
 			String id = findServerIdFromConfig(zkClient.getConfig(), address);
 			String newConfig = zkClient.removeServerFromEnsemble(id);
+			overWatch.elapsedTime("LeaveDevice|ChangeConfig");
+			
+			overWatch.reset();
 			//System.out.println("Updated Config after removing the server: \n" +  newConfig);
 			//3. stop zk server
 			stopZKServer(id);
+			overWatch.elapsedTime("LeaveDevice|StopZKServer");
 		} else {
 			System.out.println("Cannot remove device as one or more resources are being used. Please try again later.");
 		}
+		
 		
 		zkClient.close();
 		
@@ -238,23 +271,24 @@ public class DeviceManager {
 		pb.command("bash","-c", command);
 		Process process = pb.start();
 		
-//		System.out.println("Printing command execution output");
-		StringBuilder out = new StringBuilder();
-        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-        String line = null, previous = null;
-        while ((line = br.readLine()) != null)
-            if (!line.equals(previous)) {
-                previous = line;
-                out.append(line).append('\n');
-//                System.out.println(line);
-            }
+////		System.out.println("Printing command execution output");
+//		StringBuilder out = new StringBuilder();
+//        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+//        String line = null, previous = null;
+//        while ((line = br.readLine()) != null)
+//            if (!line.equals(previous)) {
+//                previous = line;
+//                out.append(line).append('\n');
+////                System.out.println(line);
+//            }
 
 //        //Check result
 //        if (process.waitFor() == 0) {
 //            System.out.println("Success!");
 //        }
         
-        return out.toString();
+        //return out.toString();
+        return "";
         
 	}
 	

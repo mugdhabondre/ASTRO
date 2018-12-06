@@ -14,11 +14,15 @@ public class Test {
     {
 		
 		DeviceTest test = new DeviceTest();
-		test.start();
-		Thread.sleep(60000);
-		
-		// exit
-		test.stop();
+		for(int i=0; i < 1; i++) {
+			System.out.println("#Test: "+ (i+1));
+			test.start();
+			Thread.sleep(10000);
+			
+			// exit
+			test.stop();
+		}
+
 		
 		// Create garbage collector thread to run in background
 //	     Runnable r = new Runnable() {

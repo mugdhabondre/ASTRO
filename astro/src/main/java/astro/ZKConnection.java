@@ -91,12 +91,19 @@ public class ZKConnection {
     
     
     //serverAddress needs to contain IP address all three ports
-    public String addServerToEnsemble(String serverAddress) throws KeeperException, InterruptedException, UnsupportedEncodingException {
+    public String addServerToEnsemble(String serverAddress) throws InterruptedException, UnsupportedEncodingException {
     	
     	List<String> joiningServers = new ArrayList();
     	joiningServers.add(serverAddress);
     	
-		byte[] newConfig = zoo.reconfigure(joiningServers, null, null, -1, new Stat());
+		byte[] newConfig;
+		try {
+			newConfig = zoo.reconfigure(joiningServers, null, null, -1, new Stat());
+		} catch (KeeperException e) {
+			// TODO Auto-generated catch block
+			Thread.sleep((long)(Math.random() * 100));
+			return addServerToEnsemble(serverAddress);
+		}
     	return new String(newConfig, "UTF-8");
     }
     

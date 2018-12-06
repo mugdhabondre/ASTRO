@@ -7,7 +7,16 @@ import java.util.concurrent.TimeUnit;
 
 public class TimeWatch {
     long starts;
+    String fileName;
+    
+    public TimeWatch(String FileName) {
+    	this.fileName = FileName;
+    }
 
+    public TimeWatch() {
+    	this.fileName = CONSTANTS.fileName;
+    }
+    
     public TimeWatch start() {
         return this.reset();
     }
@@ -20,7 +29,7 @@ public class TimeWatch {
     public long elapsedTime(String key) {
         long ends = System.currentTimeMillis();
         long interval = ends - starts;
-        appendStrToFile("\n" + key + ": " + String.valueOf(interval));
+        appendStrToFile("\n" + key + ": " + String.valueOf(interval), fileName);
         return interval;
     }
 
@@ -28,12 +37,11 @@ public class TimeWatch {
         return unit.convert(elapsedTime(key), TimeUnit.MILLISECONDS);
     }
     
-    public static void appendStrToFile(String str){ 
+    public static void appendStrToFile(String str, String fileName){ 
 		try { 
-		
 			// Open given file in append mode. 
 			BufferedWriter out = new BufferedWriter( 
-				new FileWriter(CONSTANTS.fileName, true)); 
+				new FileWriter(fileName, true)); 
 				out.write(str); 
 				out.close(); 
 			} 
