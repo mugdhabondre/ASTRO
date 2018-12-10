@@ -27,14 +27,14 @@ public class DeviceRequestThread implements Runnable {
 			deMan.joinDevice(deReq.ip, deReq.port1, deReq.port2, deReq.port3);
 //			overWatch.elapsedTime("JoinDevice");
 			
-			System.out.println("Adding Resource");
+			System.out.println("Adding Resources");
 			for(List<String> resource: deReq.resources) {
 //				overWatch.reset();
 				deMan.addResource(deReq.ip, deReq.port3, resource.get(0), Boolean.valueOf(resource.get(1)), resource.get(2));
 //				overWatch.elapsedTime("AddResource");
 			}
 			
-		 Thread.sleep(6000);
+		 Thread.sleep(700000);
 		 
 		 System.out.println("Leaving Device");
 //		 overWatch.reset();

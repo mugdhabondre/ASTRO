@@ -6,7 +6,7 @@ import java.util.List;
 
 public class DeviceTest {
 
-	int numThreads = 2;
+	int numThreads = 3;
 	Thread[] threads = new Thread[numThreads];
 	List<DeviceRequest> deviceRequests = new ArrayList();
 	
@@ -21,14 +21,15 @@ public class DeviceTest {
 		}
 	}
 	
-	public void start() {
+	public void start() throws InterruptedException {
 		createDeviceRequestObjects();
 		for(int i=0; i < numThreads; i++) {
-		    DeviceRequestThread deReqThread = new DeviceRequestThread(deviceRequests.get(i), "/var/lib/zookeeper/DeviceLatencyMicro_"+i+".txt");
+		    DeviceRequestThread deReqThread = new DeviceRequestThread(deviceRequests.get(i), "/var/lib/zookeeper/analysis/DeviceLatencyMicro_"+i+".txt");
 		     threads[i] = new Thread(deReqThread);
 		}
 		
 		for (int i = 0; i < threads.length; i++) {
+			Thread.sleep((long)(Math.random() * 100));
 			threads[i].start();
 		}
 	}

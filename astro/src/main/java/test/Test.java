@@ -14,16 +14,23 @@ public class Test {
     {
 		
 		DeviceTest test = new DeviceTest();
-		for(int i=0; i < 1; i++) {
+//		System.out.println("#Test: "+ (i+1));
+		test.start();
+		Thread.sleep(10000);
+		
+		for(int i = 0; i < 20; i++) {
 			System.out.println("#Test: "+ (i+1));
-			test.start();
-			Thread.sleep(10000);
+			UserTest userTest = new UserTest();
+			userTest.start();
+			Thread.sleep(25000);
 			
 			// exit
-			test.stop();
+			userTest.stop();
 		}
-
 		
+		test.stop();
+		System.exit(0);
+;		
 		// Create garbage collector thread to run in background
 //	     Runnable r = new Runnable() {
 //	    	 boolean exit = false;

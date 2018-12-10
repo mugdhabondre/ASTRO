@@ -19,7 +19,7 @@ import org.apache.zookeeper.data.Stat;
 public class ZKConnection {
     private ZooKeeperAdmin zoo;
     CountDownLatch connectionLatch = new CountDownLatch(1);
-
+    
     public ZooKeeper connect(String host) 
       throws IOException, 
       InterruptedException {
@@ -39,7 +39,7 @@ public class ZKConnection {
         zoo.close();
     }
     
-    public void createNode(String path, byte[] data) throws Exception {
+    public void createNode(String path, byte[] data) throws KeeperException, InterruptedException {
         zoo.create(path, data, Ids.OPEN_ACL_UNSAFE, CreateMode.PERSISTENT);
     }
     
@@ -52,7 +52,7 @@ public class ZKConnection {
     	        return new String(b, "UTF-8");
     	    }
     
-    public void updateNode(String path, byte[] data) throws Exception {
+    public void updateNode(String path, byte[] data) throws KeeperException, InterruptedException {
         zoo.setData(path, data, zoo.exists(path, true).getVersion());
     }
 
@@ -79,7 +79,7 @@ public class ZKConnection {
         return deleteNode(node);
     }
     
-    public List<String> getChildren(String path) throws Exception {
+    public List<String> getChildren(String path) throws KeeperException, InterruptedException {
     	return zoo.getChildren(path, true);
     }
     
@@ -89,9 +89,12 @@ public class ZKConnection {
         return new String(b, "UTF-8");
     }
     
+    public String addServerToEnsemble(String serverAddress) throws UnsupportedEncodingException, InterruptedException, KeeperException {
+    	return addServerToEnsemble(serverAddress, CONSTANTS.numRetries);
+    }
     
     //serverAddress needs to contain IP address all three ports
-    public String addServerToEnsemble(String serverAddress) throws InterruptedException, UnsupportedEncodingException {
+    public String addServerToEnsemble(String serverAddress, int retries) throws InterruptedException, UnsupportedEncodingException, KeeperException {
     	
     	List<String> joiningServers = new ArrayList();
     	joiningServers.add(serverAddress);
@@ -101,8 +104,12 @@ public class ZKConnection {
 			newConfig = zoo.reconfigure(joiningServers, null, null, -1, new Stat());
 		} catch (KeeperException e) {
 			// TODO Auto-generated catch block
+			if (retries < 0) {
+				throw e;
+			}
 			Thread.sleep((long)(Math.random() * 100));
-			return addServerToEnsemble(serverAddress);
+//			System.out.println(e.getMessage()+ "\n" + "Backing off..");
+			return addServerToEnsemble(serverAddress, retries - 1);
 		}
     	return new String(newConfig, "UTF-8");
     }

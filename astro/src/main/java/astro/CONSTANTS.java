@@ -8,6 +8,8 @@ public class CONSTANTS {
 	public static Utils utils = new Utils();
 	public static String zkserver = "/Users/mugdha_bondre/Documents/Fall_2018/DC/project/ASTRO/zookeeper-3.5.4-beta/bin/zkServer.sh";
 	public static String zkDir = "/var/lib/zookeeper/";
-	public static String fileName = "/var/lib/zookeeper/DeviceLatencyMicro.txt";
+	public static String fileName = "/var/lib/zookeeper/analysis/DeviceLatencyMicro.txt";
+	public static int numRetries = 100;
+	public static String userFileName = "/var/lib/zookeeper/analysis/UserRequestLatency.txt";
 	
 }
