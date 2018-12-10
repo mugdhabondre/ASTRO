@@ -3,6 +3,7 @@ package test;
 import java.util.List;
 
 import astro.DeviceManager;
+import astro.GarbageCollectorThread;
 import astro.TimeWatch;
 
 public class DeviceRequestThread implements Runnable {
@@ -27,22 +28,31 @@ public class DeviceRequestThread implements Runnable {
 			deMan.joinDevice(deReq.ip, deReq.port1, deReq.port2, deReq.port3);
 //			overWatch.elapsedTime("JoinDevice");
 			
-			System.out.println("Adding Resources");
+
+//			System.out.println("Staring GC for "+ deReq.ip + ":" + deReq.port3);
+//		     GarbageCollectorThread gcRunnable = new GarbageCollectorThread(deMan);
+//		     Thread gcThread  = new Thread(gcRunnable);
+//		     gcThread.start();
+		     
+			System.out.println("Adding Resources for " + deReq.ip + ":" + deReq.port3);
 			for(List<String> resource: deReq.resources) {
 //				overWatch.reset();
 				deMan.addResource(deReq.ip, deReq.port3, resource.get(0), Boolean.valueOf(resource.get(1)), resource.get(2));
 //				overWatch.elapsedTime("AddResource");
 			}
 			
-		 Thread.sleep(700000);
+		 Thread.sleep(200000);
 		 
-		 System.out.println("Leaving Device");
+//		 // stop GC TODO: Implement GC join 
+//		 gcThread.stop();
+		 
+		 System.out.println("Leaving Device for " + deReq.ip + ":" + deReq.port3);
 //		 overWatch.reset();
 		 deMan.leaveDevice(deReq.ip, deReq.port3, true);
 //		 overWatch.elapsedTime("LeaveDevice");
 	 }
 	 catch (Exception e) {
-		 System.out.println("Device Manager Thread stopped. Retrying...");
+		 System.out.println("Device Manager for " + deReq.ip + ":" + deReq.port3 + "Thread stopped. Retrying...");
 		 e.printStackTrace();
 	 }
     }

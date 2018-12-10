@@ -7,7 +7,10 @@ import org.apache.zookeeper.Watcher.Event.EventType;
 import org.apache.zookeeper.ZooDefs.Ids;
 import org.apache.zookeeper.ZooKeeper;
 
+import astro.DeviceManager;
+
 public class Test {
+	private static Thread garbageCollector;
 	
 	@SuppressWarnings("deprecation")
 	public static void main (String args[]) throws Exception
@@ -17,8 +20,9 @@ public class Test {
 //		System.out.println("#Test: "+ (i+1));
 		test.start();
 		Thread.sleep(10000);
-		
-		for(int i = 0; i < 20; i++) {
+		startGC();
+			
+		for(int i = 0; i < 1; i++) {
 			System.out.println("#Test: "+ (i+1));
 			UserTest userTest = new UserTest();
 			userTest.start();
@@ -28,35 +32,41 @@ public class Test {
 			userTest.stop();
 		}
 		
+		// exit
 		test.stop();
+		stopGC();
 		System.exit(0);
-;		
-		// Create garbage collector thread to run in background
-//	     Runnable r = new Runnable() {
-//	    	 boolean exit = false;
-//	         public void run() {
-//	             while(!exit) {
-//	            	 try {
-//	            		 dm.collectGarbage("127.0.0.1", "2181");
-//	            		 System.out.println("Garbage Collector running...");
-//	            		 Thread.sleep(6000);
-//	            	 }
-//	            	 catch (Exception e) {
-//	            		 e.printStackTrace();
-//	            		 System.out.println("Garbage collector stopped. Retrying...");
-//	            	 }
-//	             }
-//	         }
-//	         
-//	         public void stop() {
-//	        	 exit = true;
-//	         }
-//	     };
+    }
 
-//	     Thread garbageCollector = new Thread(r);
-//	     garbageCollector.start(); 
+	public static void startGC() {
+		DeviceManager dm = new DeviceManager();
+		// Create garbage collector thread to run in background
+	     Runnable r = new Runnable() {
+	    	 boolean exit = false;
+	         public void run() {
+	             while(!exit) {
+	            	 try {
+	            		 dm.collectGarbage("127.0.0.1", "2181");
+	            		 System.out.println("Garbage Collector running...");
+	            		 Thread.sleep(6000);
+	            	 }
+	            	 catch (Exception e) {
+	            		 e.printStackTrace();
+	            		 System.out.println("Garbage collector stopped. Retrying...");
+	            	 }
+	             }
+	         }
+	         
+	         public void stop() {
+	        	 System.out.println("Stopping Garbage Collection");
+	        	 exit = true;
+	         }
+	     };
+
+	     garbageCollector = new Thread(r);
+	     garbageCollector.start(); 
 		
-		
+
 		
 		
 //		UserTest test = new UserTest();
@@ -104,5 +114,9 @@ public class Test {
 //        
 //        connector.close();
     }
+	
+	public static void stopGC() {
+		garbageCollector.stop();
+	}
 
 }

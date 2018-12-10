@@ -180,7 +180,7 @@ public class DeviceManager {
 		
 		//get config
 		String existingDynamicConfig = zkClient.getConfig();
-//		System.out.println("Existing Config: \n" +  existingDynamicConfig);
+		System.out.println("Existing Config: \n" +  existingDynamicConfig);
 		
 		//get list of ip addresses
 		List<String> devicesInEnsemble = getServersFromConfig(existingDynamicConfig);
@@ -191,8 +191,10 @@ public class DeviceManager {
 			String[] split = device.split(":");
 			String command = "echo ruok | nc " + split[0] + " " + split[1];
 			String result = execZKServerCommand(command);
-			if(result.equals(""))
+			if(result.equals("")) {
 				crashedDevices.add(device);
+				System.out.println("Found crashed device: " + device);
+			}
 			else
 				assert(result.equals("imok"));
 		}
@@ -203,7 +205,8 @@ public class DeviceManager {
 			// find server id from config
 			String serverId = findServerIdFromConfig(existingDynamicConfig, device);
 			System.out.println("Removing server "+ serverId + " from ensemble...");
-			zkClient.removeServerFromEnsemble(serverId);
+			String newConfig = zkClient.removeServerFromEnsemble(serverId);
+			System.out.println("New Config after GC: \n" +  newConfig);
 			String[] ipport = device.split(":");
 			removeResources(zkClient, device, true);
 		}
@@ -272,23 +275,22 @@ public class DeviceManager {
 		Process process = pb.start();
 		
 ////		System.out.println("Printing command execution output");
-//		StringBuilder out = new StringBuilder();
-//        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
-//        String line = null, previous = null;
-//        while ((line = br.readLine()) != null)
-//            if (!line.equals(previous)) {
-//                previous = line;
-//                out.append(line).append('\n');
-////                System.out.println(line);
-//            }
+		StringBuilder out = new StringBuilder();
+        BufferedReader br = new BufferedReader(new InputStreamReader(process.getInputStream()));
+        String line = null, previous = null;
+        while ((line = br.readLine()) != null)
+            if (!line.equals(previous)) {
+                previous = line;
+                out.append(line).append('\n');
+            }
 
 //        //Check result
 //        if (process.waitFor() == 0) {
 //            System.out.println("Success!");
 //        }
         
-        //return out.toString();
-        return "";
+        return out.toString();
+        // return "";
         
 	}
 	
