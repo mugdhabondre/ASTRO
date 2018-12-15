@@ -41,7 +41,7 @@ public class DeviceRequestThread implements Runnable {
 //				overWatch.elapsedTime("AddResource");
 			}
 			
-		 Thread.sleep(200000);
+		 Thread.sleep(100000);
 		 
 //		 // stop GC TODO: Implement GC join 
 //		 gcThread.stop();
@@ -52,8 +52,8 @@ public class DeviceRequestThread implements Runnable {
 //		 overWatch.elapsedTime("LeaveDevice");
 	 }
 	 catch (Exception e) {
-		 System.out.println("Device Manager for " + deReq.ip + ":" + deReq.port3 + "Thread stopped. Retrying...");
-		 e.printStackTrace();
+		 System.out.println("Device Manager Thread for " + deReq.ip + ":" + deReq.port3 + " stopped. Retrying...");
+		 // e.printStackTrace();
 	 }
     }
 
